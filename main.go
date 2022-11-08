@@ -77,7 +77,6 @@ func init(){
 			desc: "use your weapon to attack one enemy",
 			move: func (caster *Character, chs *[]Character) error {
 				fmt.Println(*chs)
-s
 				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
 				var prompt string
 				for i, v := range *chs {
@@ -126,19 +125,23 @@ func main(){
 	}
 
 
-	for _, v := range characters {
-		intiative <- v.Id 
-	}
+	// for _, v := range characters {
+	// 	initiative <- v.Id 
+	// }
 	
 	for i:= 0; true; i++{
 
 		IsDead(&characters)
+		if FightIsOver(&characters){
+			fmt.Println("The fight is Over",characters)
+			break
+		}
 
 		fmt.Println(" --------- DEBUG --------- ")
 		fmt.Println(characters)
 		fmt.Println(" --------- DFINE --------- ")
 		
-		// char := &( characters[i%len(characters)] )
+		char := &( characters[i%len(characters)] )
 
 		// sfonnato
 
@@ -160,18 +163,30 @@ func main(){
 		if err := action(moves[mv], char, &characters) ; err != nil{
 			fmt.Println(err)
 		}
+		
 	}
 
 	fmt.Printf( "DEBUG \n %v \n", characters)
 }
+func FightIsOver(char *[]Character)bool {
+	fmt.Println("-----------------------Alive pg----------------------")
+	fmt.Println(*char)
+	fmt.Println("-----------------------Alive pg----------------------")
+	side := (*char)[0].Friendly	
+	for _,v := range *char{
+		if side != v.Friendly{
+			return false
+		}
+	}
+	return true
+}
 
-func IsDead (char *[]Character) {
+
+func IsDead(char *[]Character) {
 	var tmp []Character
 	for _, v := range *char {
 		if v.Hp <= 0 {
 			fmt.Println(v, "is dead")
-			//*char = append((*char)[:i],(*char)[i+1:]...)
-			//fmt.Println(*char)
 			continue
 		}
 		tmp = append(tmp, v)
