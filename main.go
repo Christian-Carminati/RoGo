@@ -23,6 +23,15 @@ func IndexOf[T int|string]( arr []T, val T  ) int {
 }
 
 
+type Queue []int //Id character
+
+func (q Queue) Add( i int) {
+	q = append(q, i)
+}
+
+func (q Queue) Pull() {
+	
+}
 
 type Class struct{
 	Name string `json:Name`
@@ -116,7 +125,6 @@ func main(){
 		Character{Id:4, Name: "nello", Lvl:1, MaxHp:20, Hp:20, Class:classNameToId("Warrior")},
 	}
 
-	var intiative chan int
 
 	for _, v := range characters {
 		intiative <- v.Id 
