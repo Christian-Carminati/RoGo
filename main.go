@@ -7,6 +7,7 @@ import (
 	_"strconv"
 )
 
+
 /*
 	check if an array IndexOf an element:
 		in case the element is found returns the index
@@ -22,16 +23,45 @@ func IndexOf[T int|string]( arr []T, val T  ) int {
 	return -1
 }
 
-
-type Queue []int //Id character
-
-func (q Queue) Add( i int) {
-	q = append(q, i)
+func bubbleSort[ T any ] ( arr *[]T, compare func( c1 T, c2 T )(bool) ) {
+	n := len(*arr)
+	for i := 0; i < n - 1; i++{
+        for j := 0; j < n - i - 1; j++ {
+            if compare((*arr)[j], (*arr)[j+1]) {
+				(*arr)[j], (*arr)[j + 1] = (*arr)[j + 1], (*arr)[j]
+			}
+		}
+	}
 }
 
-func (q Queue) Pull() {
-	
+type Queue []int //Id character in fight
+
+func (q *Queue) Add(i int) {
+	*q = append(*q, i)
 }
+
+func (q *Queue) Pull() (ret int, ok bool) {
+
+	if len(*q) == 0 {
+		ret = -1
+		ok = false
+		return
+	}
+
+	ret = (*q)[0]
+	ok = true
+	*q = (*q)[1:]
+	return
+}
+
+type HpStatus int
+const (
+	Alive HpStatus = iota // 0
+	Incap
+	Dead
+	Mutil
+)
+
 
 type Class struct{
 	Name string `json:Name`
@@ -39,11 +69,17 @@ type Class struct{
 
 type Character struct {
 	Id uint `json:"Id"`
+
 	Name string `json:"Name"`
+	
 	MaxHp uint `json:"MaxHp"`
 	Hp int `json:"Hp"`
+	Incap int `json:"Incap"`
+	
 	Lvl uint `json:"Lvl"`
 	Class int `json:"Class"`
+	Init int `json:"Init"`
+
 	Friendly bool
 }
 
@@ -51,7 +87,7 @@ type Move struct {
 	name string
 	allowed []int
 	desc string
-	move func(caster *Character, chs *[]Character) (error)
+	move func(caster *Character, chs *[]Character, queue *Queue) (error)
 }
 
 var classes []Class
@@ -63,10 +99,12 @@ func init(){
 
 	moves = []Move{
 		Move{
-			name: "heal",
+			name: "self-heal",
 			allowed: []int{ classNameToId("Mage")},
 			desc: "heals the caster",
-			move: func (caster *Character, chs *[]Character) error { 
+			move: func (caster *Character, chs *[]Character, queue *Queue) error { 
+				// caster heals himself
+
 				(*caster).Hp += 10*int((*caster).Lvl)
 				return nil
 			},
@@ -75,14 +113,16 @@ func init(){
 			name: "attack",
 			allowed: []int{classNameToId("Mage"),classNameToId("Ranger"),classNameToId("Warrior"),classNameToId("Rogue")},
 			desc: "use your weapon to attack one enemy",
-			move: func (caster *Character, chs *[]Character) error {
+			move: func (caster *Character, chs *[]Character, queue *Queue) error {
+				// character uses his melee weapon to attack an enemy
+
 				fmt.Println(*chs)
 				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
 				var prompt string
 				for i, v := range *chs {
 					// fmt.Println(v.Friendly,caster.Friendly)
-					if v.Friendly != caster.Friendly {
-						prompt += fmt.Sprintf("\t%d : %s %d\n", i, v.Name, idToClass(v.Class))
+					if v.Friendly != caster.Friendly && v.Hp > 0 {
+						prompt += fmt.Sprintf("\t%d : %s %s\n", i, v.Name, idToClass(v.Class))
 					}
 				}
 				attacked := GetUserInput("who do you want to attack?\n" + prompt)
@@ -99,10 +139,14 @@ func init(){
 			name: "fireball",
 			allowed: []int{classNameToId("Mage")},
 			desc: "the mage casts a huge fireball, hitting all the enemies",
-			move: func (caster *Character, chs *[]Character) error {				
+			move: func (caster *Character, chs *[]Character, queue *Queue) error {
+				// fireball deals AOE damage, it also targets the dead 
+				
+				// not even sure this is needed 
 				if len(*chs) < 1 {
 					return fmt.Errorf("%v missing enemies characters (DEBUG: attacker %v attack array %v)", (*caster).Id, *caster, chs )
 				}
+
 				for i := range *chs{
 					if ((*chs)[i].Friendly != caster.Friendly){
 						(*chs)[i].Hp -= 10*int((*caster).Lvl)
@@ -117,21 +161,41 @@ func init(){
 func main(){
 
 	characters := []Character{
-		Character{Id:0, Name: "pippo",Lvl:2, MaxHp:20, Hp:20, Class:classNameToId("Mage"), Friendly: true},
-		Character{Id:1, Name: "taver", Lvl:1, MaxHp:40, Hp:40, Class:classNameToId("Warrior"), Friendly: true},
-		Character{Id:2, Name: "mario", Lvl:1, MaxHp:15,  Hp:15, Class:classNameToId("Mage")},
-		Character{Id:3, Name: "coca", Lvl:1, MaxHp:20, Hp:20, Class:classNameToId("Rogue")},
-		Character{Id:4, Name: "nello", Lvl:1, MaxHp:20, Hp:20, Class:classNameToId("Warrior")},
+		Character{Id:0, Name: "pippo", Lvl:2, MaxHp:20, Hp:20, Init: 1, Incap: 40, Class:classNameToId("Mage"), Friendly: true},
+		Character{Id:1, Name: "taver", Lvl:1, MaxHp:40, Hp:40, Init: 6, Incap: 10, Class:classNameToId("Warrior"), Friendly: true},
+		Character{Id:2, Name: "mario", Lvl:1, MaxHp:15,  Hp:15, Init: 5, Incap: 40, Class:classNameToId("Mage")},
+		Character{Id:3, Name: "coca", Lvl:1, MaxHp:20, Hp:20, Init: 2, Incap: 30, Class:classNameToId("Rogue")},
+		Character{Id:4, Name: "nello", Lvl:1, MaxHp:20, Hp:20, Init: 4 , Incap: 10, Class:classNameToId("Warrior")},
 	}
 
+	var queue Queue
+	roundQueue := &queue
 
-	// for _, v := range characters {
-	// 	initiative <- v.Id 
-	// }
-	
+	bubbleSort( &characters, func (c1 Character, c2 Character) bool {
+		return c1.Init < c2.Init 
+	})
+
+	for i := range characters {
+		roundQueue.Add(i)
+	}
+
 	for i:= 0; true; i++{
 
-		IsDead(&characters)
+		charIndex, ok := roundQueue.Pull()
+		if !ok {
+			fmt.Println("something went wrong while pulling new char")
+			return
+		}
+
+		char := &( characters[charIndex] )
+
+		roundQueue.Add(charIndex)
+
+		// in case the character is dead yust skip his turn
+		if char.Hp <= 0 {
+			continue
+		}
+
 		if FightIsOver(&characters){
 			fmt.Println("The fight is Over",characters)
 			break
@@ -141,7 +205,6 @@ func main(){
 		fmt.Println(characters)
 		fmt.Println(" --------- DFINE --------- ")
 		
-		char := &( characters[i%len(characters)] )
 
 		// sfonnato
 
@@ -160,47 +223,55 @@ func main(){
 		// 	continue
 		// }
 	
-		if err := action(moves[mv], char, &characters) ; err != nil{
+		if err := action(moves[mv], char, &characters, roundQueue) ; err != nil{
 			fmt.Println(err)
 		}
-		
 	}
 
 	fmt.Printf( "DEBUG \n %v \n", characters)
 }
+
 func FightIsOver(char *[]Character)bool {
-	fmt.Println("-----------------------Alive pg----------------------")
-	fmt.Println(*char)
-	fmt.Println("-----------------------Alive pg----------------------")
-	side := (*char)[0].Friendly	
+	
+	var faction bool
+	var valid bool
 	for _,v := range *char{
-		if side != v.Friendly{
+
+		if v.Hp > 0 && valid == false {
+			faction = v.Friendly
+			valid = true
+		}
+
+		if valid && v.Friendly != faction && v.Hp > 0  {
 			return false
 		}
 	}
+
+	// clean up character array
+
 	return true
 }
 
 
-func IsDead(char *[]Character) {
-	var tmp []Character
-	for _, v := range *char {
-		if v.Hp <= 0 {
-			fmt.Println(v, "is dead")
-			continue
-		}
-		tmp = append(tmp, v)
-	
-	}
+func userHpStatus(char *[]Character) HpStatus {
 
-	*char = tmp 
+	switch {
+		case char.Hp <= 0-char.MaxHp:
+			return Mutil
+		case char.Hp <= 0:
+			return Dead
+		case char.Hp <= int(float64(char.MaxHp)*(float64(char.Incap)/100)):
+			return Incap
+		default:
+			return Alive
+	}
 }
 
 func PrintMoves( class int, movest []Move ) (ret string) {
 	for i, v := range movest {
 		for _, v1 := range v.allowed {
 			if class == v1 {
-				ret += fmt.Sprintf( "\t %v - %v %v\n", i, v.name, v.desc )
+				ret += fmt.Sprintf( "\t %d - %s %s\n", i, v.name, v.desc )
 				break
 			}
 		}
@@ -218,6 +289,10 @@ func GetUserInput( prompt string ) (ret int) {
 }
 /* ---------------------------- */
 
+func formatChar ( char Character ) string {
+
+	return fmt.Sprintf( "lvl %d | %s | %s | %s | %s ", char.Lvl, char.Name, idToClass(char.Class), "hpStatus", "eff status"  )
+}
 
 func idToClass( i int ) string {
 	return classes[i].Name
@@ -253,11 +328,11 @@ func ReadClass(FileName string){
 	
 }
 
-func action(move Move, user *Character, targets *[]Character) error {
+func action(move Move, user *Character, targets *[]Character, queue *Queue) error {
 	if IndexOf(move.allowed, (*user).Class) == -1 {
 		return fmt.Errorf("%v is not allowed to use %v", idToClass( (*user).Class ), move.name)
 	}
-	if err := move.move(user, targets); err != nil {
+	if err := move.move(user, targets, queue); err != nil {
 		fmt.Println(err.Error)
 	}
 	return nil
