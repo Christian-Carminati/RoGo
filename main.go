@@ -65,17 +65,17 @@ const (
 
 type Class struct{
 	Name string `json:Name`
-} 
+}
 
 type Character struct {
 	Id uint `json:"Id"`
 
 	Name string `json:"Name"`
-	
+
 	MaxHp uint `json:"MaxHp"`
 	Hp int `json:"Hp"`
 	Incap int `json:"Incap"`
-	
+
 	Lvl uint `json:"Lvl"`
 	Class int `json:"Class"`
 	Init int `json:"Init"`
@@ -140,9 +140,9 @@ func init(){
 			allowed: []int{classNameToId("Mage")},
 			desc: "the mage casts a huge fireball, hitting all the enemies",
 			move: func (caster *Character, chs *[]Character, queue *Queue) error {
-				// fireball deals AOE damage, it also targets the dead 
-				
-				// not even sure this is needed 
+				// fireball deals AOE damage, it also targets the dead
+
+				// not even sure this is needed
 				if len(*chs) < 1 {
 					return fmt.Errorf("%v missing enemies characters (DEBUG: attacker %v attack array %v)", (*caster).Id, *caster, chs )
 				}
@@ -172,7 +172,7 @@ func main(){
 	roundQueue := &queue
 
 	bubbleSort( &characters, func (c1 Character, c2 Character) bool {
-		return c1.Init < c2.Init 
+		return c1.Init < c2.Init
 	})
 
 	for i := range characters {
@@ -204,7 +204,6 @@ func main(){
 		fmt.Println(" --------- DEBUG --------- ")
 		fmt.Println(characters)
 		fmt.Println(" --------- DFINE --------- ")
-		
 
 		// sfonnato
 
@@ -222,7 +221,7 @@ func main(){
 
 		// 	continue
 		// }
-	
+
 		if err := action(moves[mv], char, &characters, roundQueue) ; err != nil{
 			fmt.Println(err)
 		}
@@ -232,7 +231,7 @@ func main(){
 }
 
 func FightIsOver(char *[]Character)bool {
-	
+
 	var faction bool
 	var valid bool
 	for _,v := range *char{
@@ -252,15 +251,18 @@ func FightIsOver(char *[]Character)bool {
 	return true
 }
 
+func IncapDmg(maxHp uint, incap int ) int {
+	return int(float64(char.MaxHp)*(float64(char.Incap)/100))
+}
 
-func userHpStatus(char *[]Character) HpStatus {
+func userHpStatus(char Character) HpStatus {
 
 	switch {
 		case char.Hp <= 0-char.MaxHp:
 			return Mutil
 		case char.Hp <= 0:
 			return Dead
-		case char.Hp <= int(float64(char.MaxHp)*(float64(char.Incap)/100)):
+		case char.Hp <= IncapDmg(char.MaxHp,char.Incap):
 			return Incap
 		default:
 			return Alive
@@ -285,13 +287,43 @@ func GetUserInput( prompt string ) (ret int) {
 	fmt.Println(prompt)
 
 	fmt.Scan(&ret)
-	return 
+	return
 }
 /* ---------------------------- */
 
 func formatChar ( char Character ) string {
 
-	return fmt.Sprintf( "lvl %d | %s | %s | %s | %s ", char.Lvl, char.Name, idToClass(char.Class), "hpStatus", "eff status"  )
+	var HpStatus string
+	uhs := userHpStatus(char)
+
+	switch uhs {
+	case Mutil:
+		HpStatus = "MUTIL"
+	case Dead:
+		HpStatus = "DEAD "
+	case Incap:
+		HpStatus = "INCAP"
+	default:
+		if char.Hp == int(char.MaxHp) {
+			// char is not hit
+			HpStatus = "NOHIT"
+		} else if char.Hp > int(float64(char.MaxHp) * 0.66) {
+			// char is lightly damaged
+			// at this stage mages and other fragile classes are already almost incapacitated
+			HpStatus = "DAMGD"
+		} else if char.Hp > int(float64(char.MaxHp) * 0.33) {
+			// char is wounded
+			// this mostly applies to tough classes
+			// at this stage median classes like the ranger are almost incapacitated
+			HpStatus = "WOUND"
+		} else {
+			// char is at the dead door
+			// the character is basically dead
+			HpStatus = "DDOOR"
+		}
+	}
+
+	return fmt.Sprintf( "lvl %d | %s | %s | %s | %s ", char.Lvl, char.Name, idToClass(char.Class), hpStatus, "eff status"  )
 }
 
 func idToClass( i int ) string {
