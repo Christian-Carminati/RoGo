@@ -121,8 +121,8 @@ func init(){
 				var prompt string
 				for i, v := range *chs {
 					// fmt.Println(v.Friendly,caster.Friendly)
-					if v.Friendly != caster.Friendly && v.Hp > 0 {
-						prompt += fmt.Sprintf("\t%d : %s %s\n", i, v.Name, idToClass(v.Class))
+					if v.Friendly != caster.Friendly && v.Hp > 0-int(v.MaxHp) {
+						prompt += fmt.Sprintf("\t%d : %s \n", i, formatChar(v) ) //fmt.Sprintf("\t%d : %s %s\n", i, v.Name, idToClass(v.Class))
 					}
 				}
 				attacked := GetUserInput("who do you want to attack?\n" + prompt)
@@ -191,8 +191,8 @@ func main(){
 
 		roundQueue.Add(charIndex)
 
-		// in case the character is dead yust skip his turn
-		if char.Hp <= 0 {
+		// in case the character is dead just skip his turn
+		if userHpStatus(*char) > 0 {
 			continue
 		}
 
@@ -201,9 +201,18 @@ func main(){
 			break
 		}
 
+
 		fmt.Println(" --------- DEBUG --------- ")
 		fmt.Println(characters)
 		fmt.Println(" --------- DFINE --------- ")
+
+		fmt.Println()
+
+		for _, v := range characters {
+			fmt.Println(formatChar(v))
+		}
+
+		fmt.Println()
 
 		// sfonnato
 
@@ -252,13 +261,13 @@ func FightIsOver(char *[]Character)bool {
 }
 
 func IncapDmg(maxHp uint, incap int ) int {
-	return int(float64(char.MaxHp)*(float64(char.Incap)/100))
+	return int(float64(maxHp)*(float64(incap)/100))
 }
 
 func userHpStatus(char Character) HpStatus {
 
 	switch {
-		case char.Hp <= 0-char.MaxHp:
+		case char.Hp <= 0-int(char.MaxHp):
 			return Mutil
 		case char.Hp <= 0:
 			return Dead
@@ -305,7 +314,7 @@ func formatChar ( char Character ) string {
 		HpStatus = "INCAP"
 	default:
 		if char.Hp == int(char.MaxHp) {
-			// char is not hit
+			// char has not been hit
 			HpStatus = "NOHIT"
 		} else if char.Hp > int(float64(char.MaxHp) * 0.66) {
 			// char is lightly damaged
@@ -323,7 +332,12 @@ func formatChar ( char Character ) string {
 		}
 	}
 
-	return fmt.Sprintf( "lvl %d | %s | %s | %s | %s ", char.Lvl, char.Name, idToClass(char.Class), hpStatus, "eff status"  )
+	isAlly := ' '
+	if char.Friendly {
+		isAlly = '⚝'
+	}
+
+	return fmt.Sprintf( " %c lvl %d | %s | %s | %s | %s ", isAlly, char.Lvl, char.Name, idToClass(char.Class), HpStatus, "eff status"  )
 }
 
 func idToClass( i int ) string {
@@ -357,7 +371,7 @@ func ReadClass(FileName string){
 	// 	log.Println(v.Id)
 	// 	log.Println(v.Name)
 	// }
-	
+
 }
 
 func action(move Move, user *Character, targets *[]Character, queue *Queue) error {
