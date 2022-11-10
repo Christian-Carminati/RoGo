@@ -93,7 +93,7 @@ type Move struct {
 type StatusEffect struct {
 	name   string
 	desc   string
-	effect func(val *int, caster *Character, chs *[]Character, queue *Queue) error
+	effect func(key int, caster *Character, chs *[]Character, queue *Queue) error
 }
 
 var classes []Class
@@ -222,11 +222,11 @@ func init() {
 		{
 			name: "poison",
 			desc: "the character is poisoned, taking damage every turn",
-			effect: func(val *int, caster *Character, chs *[]Character, queue *Queue) error {
+			effect: func(key int, caster *Character, chs *[]Character, queue *Queue) error {
 
-				(*caster).Hp -= *val
+				(*caster).Hp -= (*caster).Status[key]
 
-				(*val)--
+				(*caster).Status[key]--
 
 				return nil
 			},
@@ -234,11 +234,11 @@ func init() {
 		{
 			name: "mind control",
 			desc: "the character changes factions",
-			effect: func(val *int, caster *Character, chs *[]Character, queue *Queue) error {
+			effect: func(key int, caster *Character, chs *[]Character, queue *Queue) error {
 
-				(*val)--
+				(*caster).Status[key]--
 
-				if *val == 0 {
+				if (*caster).Status[key] == 0 {
 					(*caster).Friendly = !(*caster).Friendly
 				}
 
@@ -297,7 +297,7 @@ func main() {
 				delete((*char).Status, key)
 				continue
 			}
-			statusEffects[key].effect(&val, char, &characters, roundQueue)
+			statusEffects[key].effect(key, char, &characters, roundQueue)
 		}
 
 		roundQueue.Add(charIndex)
