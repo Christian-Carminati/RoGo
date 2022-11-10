@@ -13,7 +13,8 @@ check if an array IndexOf an element:
 	in case the element is found returns the index
 	in case the element is not found returns -1
 */
-func IndexOf[T int | string](arr []T, val T) int {
+
+func IndexOf[T int|string](arr []T, val T) int {
 	for i, v := range arr {
 		if v == val {
 			return i
@@ -75,6 +76,7 @@ type Character struct {
 	Hp     int  `json:"Hp"`
 	Incap  int  `json:"Incap"`
 	Status map[int]int
+	Focus bool `json:"Focus"`
 
 	Lvl   uint `json:"Lvl"`
 	Class int  `json:"Class"`
@@ -94,6 +96,7 @@ type StatusEffect struct {
 	name   string
 	desc   string
 	effect func(key int, caster *Character, chs *[]Character, queue *Queue) error
+	endEffect func(key int, caster *Character, chs *[]Character, queue *Queue)
 }
 
 var classes []Class
@@ -184,7 +187,12 @@ func init() {
 				if (*chs)[i].Status == nil {
 					(*chs)[i].Status = make(map[int]int)
 				}
+				if (*caster).Status == nil {
+					(*caster).Status = make(map[int]int)
+				}
 				(*chs)[i].Status[1] = int(caster.Lvl/2) + 1
+				(*caster).Status[2] = int((*chs)[i].Id)+1
+				(*caster).Focus = true
 
 				return nil
 			},
@@ -228,7 +236,14 @@ func init() {
 
 				(*caster).Status[key]--
 
+				if ((*caster).Status[key] <= 0) {
+					statusEffects[key].endEffect(key, caster, chs, queue)
+				}
+
 				return nil
+			},
+			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
+				delete((*caster).Status, key)
 			},
 		},
 		{
@@ -240,9 +255,37 @@ func init() {
 
 				if (*caster).Status[key] == 0 {
 					(*caster).Friendly = !(*caster).Friendly
+					statusEffects[key].endEffect(key, caster, chs, queue)
 				}
 
 				return nil
+			},
+			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
+				(*caster).Hp = 0
+				(*caster).Friendly = !(*caster).Friendly
+
+				fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+				fmt.Println(caster)
+
+				for i := range (*chs){
+					if val, ok := (*chs)[i].Status[2]; ok && val == int((*caster).Id-1) {
+						fmt.Println((*chs)[i])
+						statusEffects[2].endEffect(key, &((*chs)[i]), chs, queue)
+					}
+				}
+
+				fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+				delete((*caster).Status, key)
+			},
+		},
+		{
+			name: "controlling mind",
+			desc: "caster is controlling the mind of another character",
+			effect: func(key int, caster *Character, chs *[]Character, queue *Queue) error {
+				return nil
+			},
+			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
+				delete((*caster).Status, key)
 			},
 		},
 	}
@@ -251,11 +294,11 @@ func init() {
 func main() {
 
 	characters := []Character{
-		{Id: 0, Name: "pippo", Lvl: 2, MaxHp: 20, Hp: 20, Init: 1, Incap: 40, Class: classNameToId("Mage"), Friendly: true},
-		{Id: 1, Name: "taver", Lvl: 1, MaxHp: 40, Hp: 40, Init: 6, Incap: 10, Class: classNameToId("Warrior"), Friendly: true},
-		{Id: 2, Name: "mario", Lvl: 1, MaxHp: 15, Hp: 15, Init: 5, Incap: 40, Class: classNameToId("Mage")},
-		{Id: 3, Name: "coca", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Class: classNameToId("Rogue")},
-		{Id: 4, Name: "nello", Lvl: 1, MaxHp: 20, Hp: 20, Init: 4, Incap: 10, Class: classNameToId("Warrior")},
+		{Id: 0, Name: "pippo", Lvl: 2, MaxHp: 20, Hp: 20, Init: 1, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage"), Friendly: true},
+		{Id: 1, Name: "taver", Lvl: 1, MaxHp: 40, Hp: 40, Init: 6, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"), Friendly: true},
+		{Id: 2, Name: "mario", Lvl: 1, MaxHp: 15, Hp: 15, Init: 5, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage")},
+		{Id: 3, Name: "coca", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Status: make(map[int]int), Class: classNameToId("Rogue")},
+		{Id: 4, Name: "nello", Lvl: 1, MaxHp: 20, Hp: 20, Init: 4, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior")},
 	}
 
 	var queue Queue
@@ -294,7 +337,7 @@ func main() {
 		for key := range (*char).Status {
 			val := (*char).Status[key]
 			if val == 0 {
-				delete((*char).Status, key)
+				statusEffects[key].endEffect(key, char, &characters, roundQueue)
 				continue
 			}
 			statusEffects[key].effect(key, char, &characters, roundQueue)
