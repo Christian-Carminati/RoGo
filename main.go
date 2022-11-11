@@ -14,13 +14,19 @@ check if an array IndexOf an element:
 	in case the element is not found returns -1
 */
 
-func IndexOf[T int|string](arr []T, val T) int {
+func IndexOf[T any, V any](arr []T, val V, compareFunc func(c1 T, c2 V) bool) int {
 	for i, v := range arr {
-		if v == val {
+		if compareFunc(v, val) {
 			return i
 		}
 	}
 	return -1
+}
+
+func DmgTypeId(name string) int {
+	return IndexOf(damageTypes, "Slashing", func (v1 DamageType, v2 string)bool {
+		return v1.Name == v2
+	})
 }
 
 func bubbleSort[T any](arr *[]T, compare func(c1 T, c2 T) bool) {
@@ -31,6 +37,14 @@ func bubbleSort[T any](arr *[]T, compare func(c1 T, c2 T) bool) {
 				(*arr)[j], (*arr)[j+1] = (*arr)[j+1], (*arr)[j]
 			}
 		}
+	}
+}
+
+func prettyPrintStruct[T any](val *[]T){
+	for _, v := range (*val){
+		s, _ := json.Marshal(v)
+		fmt.Println(string(s))
+		fmt.Println()
 	}
 }
 
@@ -75,14 +89,14 @@ type Character struct {
 	MaxHp  uint `json:"MaxHp"`
 	Hp     int  `json:"Hp"`
 	Incap  int  `json:"Incap"`
-	Status map[int]int
+	Status map[int]int `json:"Status"`
 	Focus bool `json:"Focus"`
 
 	Lvl   uint `json:"Lvl"`
 	Class int  `json:"Class"`
 	Init  int  `json:"Init"`
 
-	Friendly bool
+	Friendly bool `json:"friendly"`
 }
 
 type Move struct {
@@ -99,13 +113,65 @@ type StatusEffect struct {
 	endEffect func(key int, caster *Character, chs *[]Character, queue *Queue)
 }
 
-var classes []Class
+type DamageType struct{
+	Name string `json:"Name"`
+}
 
+type Weapon struct{
+	Name string `json:"Name"`
+	Damage_type []int
+	Damage int `json:"Damage"`
+}
+
+type Armor struct {
+	Name string `json:"name"`
+	// hp might not be actually used 
+	Hp int `json:"hp"`
+	Resistences map[int]float64 //dictionary maps a damage resistence and his percentual(1, 0.0)
+}
+
+var classes []Class
+var damageTypes []DamageType
 var moves []Move
 var statusEffects []StatusEffect
+var armors []Armor
+var weapons []Weapon
 
 func init() {
-	ReadClass("files/classes.json")
+	if err := loadJson("files/classes.json", &classes); err != nil {
+		fmt.Printf("Error reading classes %e", err)
+	}
+	if err := loadJson("files/damage_types.json", &damageTypes); err != nil {
+		fmt.Printf("Error reading damage types %e", err)
+	}
+
+	armors = []Armor{
+		{
+			Name: "old rusty chainmail",
+			Resistences: map[int]float64{
+				DmgTypeId("Slashing") : 0.6,
+				DmgTypeId("Piercing") : 0.2,
+			},
+		},
+		{
+			Name: "damaged plate armor",
+			Resistences: map[int]float64{
+				DmgTypeId("Piercing") : 0.6,
+				DmgTypeId("Bludgegoing") : 0.4,
+				DmgTypeId("Slashing") : 0.2,
+			},
+		}
+	}
+
+	weapons = []Weapon{
+		{
+			Name: "Longsword",
+			DamageType: {
+				DmgTypeId("Slashing"),
+			},
+			Damage: 8,
+		},
+	}
 
 	moves = []Move{
 		{
@@ -114,7 +180,10 @@ func init() {
 			desc:    "heals the caster",
 			move: func(caster *Character, chs *[]Character, queue *Queue) error {
 				// caster heals himself
-
+				if (*caster).Hp + (10 * int((*caster).Lvl)) > int((*caster).MaxHp){
+					(*caster).Hp = int((*caster).MaxHp)
+					return nil
+				}
 				(*caster).Hp += 10 * int((*caster).Lvl)
 				return nil
 			},
@@ -191,7 +260,7 @@ func init() {
 					(*caster).Status = make(map[int]int)
 				}
 				(*chs)[i].Status[1] = int(caster.Lvl/2) + 1
-				(*caster).Status[2] = int((*chs)[i].Id)+1
+				(*caster).Status[2] = int((*chs)[i].Id)
 				(*caster).Focus = true
 
 				return nil
@@ -200,7 +269,7 @@ func init() {
 		{
 			name:    "poisonus dart",
 			allowed: []int{classNameToId("Rogue")},
-			desc:    "the attacker launches a poisoned dart, dealing 5 dmg and posioning the subject for 2*Lvl turns",
+			desc:    "the attacker launches a poisoned dart, dealing 5 dmg and posioning the subject for 2*Lvl stacks",
 			move: func(caster *Character, chs *[]Character, queue *Queue) error {
 
 				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
@@ -219,7 +288,7 @@ func init() {
 				if (*chs)[i].Status == nil {
 					(*chs)[i].Status = make(map[int]int)
 				}
-				(*chs)[i].Status[0] = int(caster.Lvl)
+				(*chs)[i].Status[0] = 2*int(caster.Lvl)
 
 				return nil
 			},
@@ -232,13 +301,13 @@ func init() {
 			desc: "the character is poisoned, taking damage every turn",
 			effect: func(key int, caster *Character, chs *[]Character, queue *Queue) error {
 
-				(*caster).Hp -= (*caster).Status[key]
-
-				(*caster).Status[key]--
-
 				if ((*caster).Status[key] <= 0) {
 					statusEffects[key].endEffect(key, caster, chs, queue)
 				}
+
+				(*caster).Hp -= (*caster).Status[key]
+
+				(*caster).Status[key]--
 
 				return nil
 			},
@@ -251,31 +320,39 @@ func init() {
 			desc: "the character changes factions",
 			effect: func(key int, caster *Character, chs *[]Character, queue *Queue) error {
 
-				(*caster).Status[key]--
+				//fmt.Println("DEBUG: ", *caster)
+				(*caster).Focus = true
 
-				if (*caster).Status[key] == 0 {
+				if (*caster).Status[key] <= 0 {
 					//(*caster).Friendly = !(*caster).Friendly
 					statusEffects[key].endEffect(key, caster, chs, queue)
 				}
+
+				(*caster).Status[key]--
 
 				return nil
 			},
 			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
 				(*caster).Friendly = !(*caster).Friendly
+				(*caster).Focus = false
 
-				fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
-				fmt.Println(caster)
+				/*fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+				fmt.Println(caster)*/
 
 				for i := range (*chs){
-					fmt.Println((*chs)[i].Status[2])
+					//val, ok := (*chs)[i].Status[2]
+					//fmt.Println(val, ok, "|", (*caster).Id )
 					if val, ok := (*chs)[i].Status[2]; ok && val == int((*caster).Id) {
-						fmt.Println((*chs)[i])
-						statusEffects[2].endEffect(key, &((*chs)[i]), chs, queue)
+						//fmt.Println((*chs)[i])
+						statusEffects[2].endEffect(2, &((*chs)[i]), chs, queue)
 					}
 				}
 
-				fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+				/*fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+				fmt.Printf("Porcoddio: %p\n", caster)
+				fmt.Println((*caster), "| deleting key: ", key )*/
 				delete((*caster).Status, key)
+				//fmt.Println((*caster))
 			},
 		},
 		{
@@ -285,6 +362,7 @@ func init() {
 				return nil
 			},
 			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
+				(*caster).Focus = false
 				delete((*caster).Status, key)
 			},
 		},
@@ -315,7 +393,7 @@ func main() {
 	for i := 0; true; i++ {
 
 		fmt.Println(" --------- DEBUG --------- ")
-		fmt.Println(characters)
+		prettyPrintStruct(&characters)
 		fmt.Println(" --------- DFINE --------- ")
 
 		charIndex, ok := roundQueue.Pull()
@@ -332,6 +410,7 @@ func main() {
 				statusEffects[key].endEffect(key, char, &characters, roundQueue)
 				continue
 			}*/
+			fmt.Printf("Porcoddio: %p\n", char)
 			statusEffects[key].effect(key, char, &characters, roundQueue)
 		}
 
@@ -481,7 +560,7 @@ func formatChar(char Character) string {
 		isAlly = '⚝'
 	}
 
-	return fmt.Sprintf(" %c  lvl %d | %s | %s | %s | %s ", isAlly, char.Lvl, char.Name, idToClass(char.Class), HpStatus, char.Status)
+	return fmt.Sprintf(" %c  lvl %d | %s | %s | %s | %T ", isAlly, char.Lvl, char.Name, idToClass(char.Class), HpStatus, char.Status)
 }
 
 func idToClass(i int) string {
@@ -498,28 +577,26 @@ func classNameToId(name string) int {
 	return 0
 }
 
-func ReadClass(FileName string) {
+func loadJson[T any](FileName string, inp T) error {
 	content, err := os.ReadFile(FileName)
 	if err != nil {
-		fmt.Println("Error when opening file: ", err)
-		return
+		return err
 	}
 
-	err = json.Unmarshal(content, &classes)
+	err = json.Unmarshal(content, &inp)
 	if err != nil {
-		fmt.Println("Error during Unmarshal(): ", err)
-		return
+		return err
 	}
 
 	// for _, v := range Classes{
 	// 	log.Println(v.Id)
 	// 	log.Println(v.Name)
 	// }
-
+	return nil
 }
 
 func action(move Move, user *Character, targets *[]Character, queue *Queue) error {
-	if IndexOf(move.allowed, (*user).Class) == -1 {
+	if IndexOf(move.allowed, (*user).Class, func(v1 int, v2 int) bool { return v1 == v2;} ) == -1 {
 		return fmt.Errorf("%v is not allowed to use %v", idToClass((*user).Class), move.name)
 	}
 	if err := move.move(user, targets, queue); err != nil {
