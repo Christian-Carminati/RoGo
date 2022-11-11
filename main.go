@@ -254,21 +254,21 @@ func init() {
 				(*caster).Status[key]--
 
 				if (*caster).Status[key] == 0 {
-					(*caster).Friendly = !(*caster).Friendly
+					//(*caster).Friendly = !(*caster).Friendly
 					statusEffects[key].endEffect(key, caster, chs, queue)
 				}
 
 				return nil
 			},
 			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
-				(*caster).Hp = 0
 				(*caster).Friendly = !(*caster).Friendly
 
 				fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
 				fmt.Println(caster)
 
 				for i := range (*chs){
-					if val, ok := (*chs)[i].Status[2]; ok && val == int((*caster).Id-1) {
+					fmt.Println((*chs)[i].Status[2])
+					if val, ok := (*chs)[i].Status[2]; ok && val == int((*caster).Id) {
 						fmt.Println((*chs)[i])
 						statusEffects[2].endEffect(key, &((*chs)[i]), chs, queue)
 					}
@@ -318,14 +318,6 @@ func main() {
 		fmt.Println(characters)
 		fmt.Println(" --------- DFINE --------- ")
 
-		fmt.Println()
-
-		for i, v := range queue {
-			fmt.Println(i, ":"+formatChar(characters[v]))
-		}
-
-		fmt.Println()
-
 		charIndex, ok := roundQueue.Pull()
 		if !ok {
 			fmt.Println("something went wrong while pulling new char")
@@ -335,15 +327,25 @@ func main() {
 		char := &(characters[charIndex])
 
 		for key := range (*char).Status {
-			val := (*char).Status[key]
-			if val == 0 {
+			//val := (*char).Status[key]
+			/*if val == 0 {
 				statusEffects[key].endEffect(key, char, &characters, roundQueue)
 				continue
-			}
+			}*/
 			statusEffects[key].effect(key, char, &characters, roundQueue)
 		}
 
 		roundQueue.Add(charIndex)
+
+
+		fmt.Println()
+		fmt.Println(0, ":"+formatChar(*char))
+		for i, v := range queue[:len(queue)-1] {
+			fmt.Println(i+1, ":"+formatChar(characters[v]))
+		}
+
+		fmt.Println()
+
 
 		// in case the character is dead just skip his turn
 		if userHpStatus(*char) > 0 {
@@ -479,7 +481,7 @@ func formatChar(char Character) string {
 		isAlly = '⚝'
 	}
 
-	return fmt.Sprintf(" %c  lvl %d | %s | %s | %s | %s ", isAlly, char.Lvl, char.Name, idToClass(char.Class), HpStatus, "eff status")
+	return fmt.Sprintf(" %c  lvl %d | %s | %s | %s | %s ", isAlly, char.Lvl, char.Name, idToClass(char.Class), HpStatus, char.Status)
 }
 
 func idToClass(i int) string {
