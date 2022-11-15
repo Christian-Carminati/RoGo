@@ -171,11 +171,17 @@ func init() {
 			desc:    "the mage controls the mind of the enemy for ⌊lvl/2⌋+1 turns",
 			move: func(caster *Character, chs *[]Character, queue *Queue) error {
 
+				if (*caster).Focus == true {
+					return fmt.Errorf("caster does not have focus")
+				}
+
 				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
 				var prompt string
 				for i, v := range *chs {
 					// fmt.Println(v.Friendly,caster.Friendly)
-					if v.Friendly != caster.Friendly && v.Hp > 0-int(v.MaxHp) {
+					_, okMindC := v.Status[1]
+					_, okCMind := v.Status[2]
+					if v.Friendly != caster.Friendly && v.Hp > 0-int(v.MaxHp) && !okMindC && !okCMind {
 						prompt += fmt.Sprintf("\t%d : %s \n", i, formatChar(v)) //fmt.Sprintf("\t%d : %s %s\n", i, v.Name, idToClass(v.Class))
 					}
 				}
@@ -183,6 +189,7 @@ func init() {
 				/* ------------------------------------- */
 
 				(*chs)[i].Friendly = !(*chs)[i].Friendly
+				(*chs)[i].Focus = true
 
 				if (*chs)[i].Status == nil {
 					(*chs)[i].Status = make(map[int]int)
@@ -257,11 +264,11 @@ func init() {
 					//(*caster).Friendly = !(*caster).Friendly
 					statusEffects[key].endEffect(key, caster, chs, queue)
 				}
-
 				return nil
 			},
 			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
 				(*caster).Friendly = !(*caster).Friendly
+				(*caster).Focus = false
 
 				fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
 				fmt.Println(caster)
@@ -285,6 +292,7 @@ func init() {
 				return nil
 			},
 			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
+				(*caster).Focus = false
 				delete((*caster).Status, key)
 			},
 		},
