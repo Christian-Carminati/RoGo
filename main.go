@@ -24,7 +24,7 @@ func IndexOf[T any, V any](arr []T, val V, compareFunc func(c1 T, c2 V) bool) in
 }
 
 func DmgTypeId(name string) int {
-	return IndexOf(damageTypes, "Slashing", func (v1 DamageType, v2 string)bool {
+	return IndexOf(damageTypes, name, func (v1 DamageType, v2 string)bool {
 		return v1.Name == v2
 	})
 }
@@ -119,7 +119,7 @@ type DamageType struct{
 
 type Weapon struct{
 	Name string `json:"Name"`
-	Damage_type []int
+	DamageType []int
 	Damage int `json:"Damage"`
 }
 
@@ -160,13 +160,13 @@ func init() {
 				DmgTypeId("Bludgegoing") : 0.4,
 				DmgTypeId("Slashing") : 0.2,
 			},
-		}
+		},
 	}
 
 	weapons = []Weapon{
 		{
 			Name: "Longsword",
-			DamageType: {
+			DamageType: []int{
 				DmgTypeId("Slashing"),
 			},
 			Damage: 8,
@@ -334,12 +334,8 @@ func init() {
 					//(*caster).Friendly = !(*caster).Friendly
 					statusEffects[key].endEffect(key, caster, chs, queue)
 				}
-<<<<<<< HEAD
-
 				(*caster).Status[key]--
 
-=======
->>>>>>> 5db37eecacd153a70bc124556a344f0ff5a8eaf5
 				return nil
 			},
 			endEffect: func(key int, caster *Character, chs *[]Character, queue *Queue) {
@@ -381,11 +377,14 @@ func init() {
 
 func main() {
 
+	fmt.Println(calculateDamageProtection(&(weapons[0]), &(armors[0])))
+
+	
 	characters := []Character{
 		{Id: 0, Name: "pippo", Lvl: 2, MaxHp: 20, Hp: 20, Init: 1, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage"), Friendly: true},
 		{Id: 1, Name: "taver", Lvl: 1, MaxHp: 40, Hp: 40, Init: 6, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"), Friendly: true},
 		{Id: 2, Name: "mario", Lvl: 1, MaxHp: 15, Hp: 15, Init: 5, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage")},
-		{Id: 3, Name: "coca", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Status: make(map[int]int), Class: classNameToId("Rogue")},
+		{Id: 3, Name: "cocaa", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Status: make(map[int]int), Class: classNameToId("Rogue")},
 		{Id: 4, Name: "nello", Lvl: 1, MaxHp: 20, Hp: 20, Init: 4, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior")},
 	}
 
@@ -469,6 +468,26 @@ func main() {
 	}
 
 	fmt.Printf("DEBUG \n %v \n", characters)
+}
+
+
+//TODO: missing natural protection given by race or class 
+/*
+	calculates dmg protection given by given armor
+*/
+func calculateDamageProtection(weapon *Weapon, armor *Armor ) float64 {
+	fmt.Println((*weapon), (*armor),(*armor).Resistences)
+	perc := 100.0
+	for protType, protVal := range (*armor).Resistences {
+		for _, dmgType := range (*weapon).DamageType {
+			if protType == dmgType {
+				fmt.Println(perc,len((*weapon).DamageType), (*weapon).DamageType, (*armor).Resistences ,protVal)
+				perc -= (100/float64(len((*weapon).DamageType)))*protVal
+				break
+			}
+		}
+	}
+	return perc/100.0
 }
 
 func FightIsOver(char *[]Character) bool {
