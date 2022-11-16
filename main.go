@@ -29,6 +29,18 @@ func DmgTypeId(name string) int {
 	})
 }
 
+func WeaponId(name string) int {
+	return IndexOf(weapons, name, func (v1 Weapon, v2 string)bool {
+		return v1.Name == v2
+	})
+}
+
+func ArmorId(name string) int {
+	return IndexOf(armors, name, func (v1 Armor, v2 string)bool {
+		return v1.Name == v2
+	})
+}
+
 func bubbleSort[T any](arr *[]T, compare func(c1 T, c2 T) bool) {
 	n := len(*arr)
 	for i := 0; i < n-1; i++ {
@@ -81,22 +93,29 @@ type Class struct {
 	Name string `json:"Name"`
 }
 
+type Race struct {
+	Name string `json:"Name"`
+}
+
 type Character struct {
 	Id uint `json:"Id"`
-
+	//identify parameters
 	Name string `json:"Name"`
-
+	//attributes
 	MaxHp  uint `json:"MaxHp"`
 	Hp     int  `json:"Hp"`
+	//flag & status
 	Incap  int  `json:"Incap"`
 	Status map[int]int `json:"Status"`
 	Focus bool `json:"Focus"`
-
+	Friendly bool `json:"friendly"`
+	//skill
 	Lvl   uint `json:"Lvl"`
 	Class int  `json:"Class"`
 	Init  int  `json:"Init"`
-
-	Friendly bool `json:"friendly"`
+	//weapon and armor
+	Armor int `json:"Armor"`
+	Weapon int `json:"Weapon"`
 }
 
 type Move struct {
@@ -129,7 +148,7 @@ type Armor struct {
 	Hp int `json:"hp"`
 	Resistences map[int]float64 //dictionary maps a damage resistence and his percentual(1, 0.0)
 }
-
+var races []Race
 var classes []Class
 var damageTypes []DamageType
 var moves []Move
@@ -144,20 +163,23 @@ func init() {
 	if err := loadJson("files/damage_types.json", &damageTypes); err != nil {
 		fmt.Printf("Error reading damage types %e", err)
 	}
+	if err := loadJson("files/races.json", &races); err != nil {
+		fmt.Printf("Error reading damage types %e", err)
+	}
 
 	armors = []Armor{
 		{
-			Name: "old rusty chainmail",
+			Name: "Old Rusty Chainmail",
 			Resistences: map[int]float64{
 				DmgTypeId("Slashing") : 0.6,
 				DmgTypeId("Piercing") : 0.2,
 			},
 		},
 		{
-			Name: "damaged plate armor",
+			Name: "Damaged Plate Armor",
 			Resistences: map[int]float64{
 				DmgTypeId("Piercing") : 0.6,
-				DmgTypeId("Bludgegoing") : 0.4,
+				DmgTypeId("Bludgeoning") : 0.4,
 				DmgTypeId("Slashing") : 0.2,
 			},
 		},
@@ -170,6 +192,27 @@ func init() {
 				DmgTypeId("Slashing"),
 			},
 			Damage: 8,
+		},
+		{
+			Name: "Spear",
+			DamageType: []int{
+				DmgTypeId("Piercing"),
+			},
+			Damage: 4,
+		},
+		{
+			Name: "Iron Mace",
+			DamageType: []int{
+				DmgTypeId("Bludgeoning"),
+			},
+			Damage: 15,
+		},
+		{
+			Name: "Crossbow",
+			DamageType: []int{
+				DmgTypeId("Piercing"),
+			},
+			Damage: 10,
 		},
 	}
 
@@ -193,9 +236,11 @@ func init() {
 			allowed: []int{classNameToId("Mage"), classNameToId("Ranger"), classNameToId("Warrior"), classNameToId("Rogue")},
 			desc:    "use your weapon to attack one enemy",
 			move: func(caster *Character, chs *[]Character, queue *Queue) error {
+				var Damage = weapons[(*caster).Weapon].Damage
+				var DamageType = weapons[(*caster).Weapon].DamageType
 				// character uses his melee weapon to attack an enemy
 
-				fmt.Println(*chs)
+				//fmt.Println(*chs)
 				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
 				var prompt string
 				for i, v := range *chs {
@@ -210,7 +255,9 @@ func init() {
 				/*if len(*chs) != 1 {
 					return fmt.Errorf("%v can only attack one character (DEBUG: attacker %v attack array %v)", (*caster).Id, *caster, *chs )
 				}*/
-				(*chs)[attacked].Hp -= 10 * int((*caster).Lvl)
+
+				//fmt.Println(int(calculateDamageProtection(&weapons[(*caster).Weapon].DamageType,&armors[(*chs)[attacked].Armor]) * float64(weapons[(*caster).Weapon].Damage) * float64((*caster).Lvl)))
+				(*chs)[attacked].Hp -= int(calculateDamageProtection(&DamageType,&armors[(*chs)[attacked].Armor]) * float64(Damage) * float64((*caster).Lvl))
 				return nil
 			},
 		},
@@ -219,16 +266,23 @@ func init() {
 			allowed: []int{classNameToId("Mage")},
 			desc:    "the mage casts a huge fireball, hitting all the enemies",
 			move: func(caster *Character, chs *[]Character, queue *Queue) error {
+
+				var Damage = 10
+				var DamageType = []int{DmgTypeId("Fire")}
+
+
 				// fireball deals AOE damage, it also targets the dead
 
 				// not even sure this is needed
 				if len(*chs) < 1 {
 					return fmt.Errorf("%v missing enemies characters (DEBUG: attacker %v attack array %v)", (*caster).Id, *caster, chs)
 				}
-
+				//var DamageType 
 				for i := range *chs {
 					if (*chs)[i].Friendly != caster.Friendly {
-						(*chs)[i].Hp -= 10 * int((*caster).Lvl)
+						
+						//fmt.Println(int(calculateDamageProtection(&DamageType,&armors[(*chs)[i].Armor])))
+						(*chs)[i].Hp -= Damage * int(calculateDamageProtection(&DamageType,&armors[(*chs)[i].Armor])) * int((*caster).Lvl)
 					}
 				}
 				return nil
@@ -279,6 +333,10 @@ func init() {
 			desc:    "the attacker launches a poisoned dart, dealing 5 dmg and posioning the subject for 2*Lvl stacks",
 			move: func(caster *Character, chs *[]Character, queue *Queue) error {
 
+				var DamageArrow = weapons[(*caster).Weapon].Damage
+				var DamageTypeArrow = weapons[(*caster).Weapon].DamageType
+				var stack = 5
+
 				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
 				var prompt string
 				for i, v := range *chs {
@@ -290,12 +348,12 @@ func init() {
 				i := GetUserInput("who do you want to attack?\n" + prompt)
 				/* ------------------------------------- */
 
-				(*chs)[i].Hp -= 5
+				(*chs)[i].Hp -= int(calculateDamageProtection(&DamageTypeArrow,&armors[(*chs)[i].Armor]) * float64(DamageArrow) * float64((*caster).Lvl))
 
 				if (*chs)[i].Status == nil {
 					(*chs)[i].Status = make(map[int]int)
 				}
-				(*chs)[i].Status[0] = 2*int(caster.Lvl)
+				(*chs)[i].Status[0] = stack*int(caster.Lvl)
 
 				return nil
 			},
@@ -377,15 +435,13 @@ func init() {
 
 func main() {
 
-	fmt.Println(calculateDamageProtection(&(weapons[0]), &(armors[0])))
 
-	
 	characters := []Character{
-		{Id: 0, Name: "pippo", Lvl: 2, MaxHp: 20, Hp: 20, Init: 1, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage"), Friendly: true},
-		{Id: 1, Name: "taver", Lvl: 1, MaxHp: 40, Hp: 40, Init: 6, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"), Friendly: true},
-		{Id: 2, Name: "mario", Lvl: 1, MaxHp: 15, Hp: 15, Init: 5, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage")},
-		{Id: 3, Name: "cocaa", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Status: make(map[int]int), Class: classNameToId("Rogue")},
-		{Id: 4, Name: "nello", Lvl: 1, MaxHp: 20, Hp: 20, Init: 4, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior")},
+		{Id: 0, Name: "pippo", Lvl: 2, MaxHp: 20, Hp: 20, Init: 1, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage"),Weapon:WeaponId("Longsword"),Armor:ArmorId("Old Rusty Chainmail"), Friendly: true},
+		{Id: 1, Name: "taver", Lvl: 1, MaxHp: 40, Hp: 40, Init: 6, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"),Weapon:WeaponId("Iron Mace"),Armor:ArmorId("Damaged Plate Armor"), Friendly: true},
+		{Id: 2, Name: "mario", Lvl: 1, MaxHp: 15, Hp: 15, Init: 5, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage"),Weapon:WeaponId("Spear"),Armor:ArmorId("Old Rusty Chainmail")},
+		{Id: 3, Name: "cocaa", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Status: make(map[int]int), Class: classNameToId("Rogue"),Weapon:WeaponId("Crossbow"),Armor:ArmorId("Damaged Plate Armor")},
+		{Id: 4, Name: "nello", Lvl: 1, MaxHp: 20, Hp: 20, Init: 4, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"),Weapon:WeaponId("Spear"),Armor:ArmorId("Old Rusty Chainmail")},
 	}
 
 	var queue Queue
@@ -419,7 +475,7 @@ func main() {
 				statusEffects[key].endEffect(key, char, &characters, roundQueue)
 				continue
 			}*/
-			fmt.Printf("Porcoddio: %p\n", char)
+			//fmt.Printf("Porcoddio: %p\n", char)
 			statusEffects[key].effect(key, char, &characters, roundQueue)
 		}
 
@@ -475,14 +531,14 @@ func main() {
 /*
 	calculates dmg protection given by given armor
 */
-func calculateDamageProtection(weapon *Weapon, armor *Armor ) float64 {
-	fmt.Println((*weapon), (*armor),(*armor).Resistences)
+func calculateDamageProtection(weaponDamageTypes *[]int, armor *Armor ) float64 {
+	//fmt.Println((*weapon), (*armor),(*armor).Resistences)
 	perc := 100.0
 	for protType, protVal := range (*armor).Resistences {
-		for _, dmgType := range (*weapon).DamageType {
+		for _, dmgType := range (*weaponDamageTypes) {
 			if protType == dmgType {
-				fmt.Println(perc,len((*weapon).DamageType), (*weapon).DamageType, (*armor).Resistences ,protVal)
-				perc -= (100/float64(len((*weapon).DamageType)))*protVal
+				//fmt.Println(perc,len(*weaponDamageTypes), (*weaponDamageTypes), (*armor).Resistences ,protVal)
+				perc -= (100/float64(len(*weaponDamageTypes)))*protVal
 				break
 			}
 		}
@@ -602,7 +658,6 @@ func classNameToId(name string) int {
 			return i
 		}
 	}
-
 	return 0
 }
 
