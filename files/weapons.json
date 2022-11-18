@@ -1,0 +1,30 @@
+[
+	{
+		"Name": "Longsword",
+		"DamageType": [
+			11
+		],
+		"Damage": 8
+	},
+	{
+		"Name": "Spear",
+		"DamageType": [
+			9
+		],
+		"Damage": 4
+	},
+	{
+		"Name": "Iron Mace",
+		"DamageType": [
+			2
+		],
+		"Damage": 15
+	},
+	{
+		"Name": "Crossbow",
+		"DamageType": [
+			9
+		],
+		"Damage": 10
+	}
+]

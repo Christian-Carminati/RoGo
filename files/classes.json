@@ -3,7 +3,11 @@
         "Name": "Civilian"
     },
     {
-        "Name": "Mage"
+        "Name": "Mage",
+        "Resistences":{
+            "0" :0.6,
+            "1": 0.4
+        }
     },
     {
         "Name": "Rogue"

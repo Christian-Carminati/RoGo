@@ -3,7 +3,11 @@
         "Name": "Dragonborn"
     },
     {
-        "Name": "Dwarf"
+        "Name": "Dwarf",
+        "Resistences":{
+            "0" :0.6,
+            "1" : 0.4
+        }
     },
     {
         "Name": "Elf"

@@ -1,0 +1,19 @@
+[
+	{
+		"Name": "Old Rusty Chainmail",
+		"Hp": 0,
+		"Resistences": {
+			"11": 0.6,
+			"9": 0.2
+		}
+	},
+	{
+		"Name": "Damaged Plate Armor",
+		"Hp": 0,
+		"Resistences": {
+			"11": 0.2,
+			"2": 0.4,
+			"9": 0.6
+		}
+	}
+]
