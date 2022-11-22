@@ -111,13 +111,13 @@ const (
 )
 
 type Class struct {
-	Name        string `json:"Name"`
-	Resistences map[int]float64
+	Name        string          `json:"Name"`
+	Resistences map[int]float64 `json:"Resistences"`
 }
 
 type Race struct {
-	Name        string `json:"Name"`
-	Resistences map[int]float64
+	Name        string          `json:"Name"`
+	Resistences map[int]float64 `json:"Resistences"`
 }
 
 type Character struct {
@@ -144,10 +144,10 @@ type Character struct {
 }
 
 type Move struct {
-	name    string
-	allowed []int
-	desc    string
-	move    func(caster *Character, chs *[]Character, queue *Queue) error
+	Name    string                                                        `json:"Name"`
+	Allowed []int                                                         `json:"Allowed"`
+	Desc    string                                                        `json:"Desc"`
+	Move    func(caster *Character, chs *[]Character, queue *Queue) error `json:"Move"`
 }
 
 type StatusEffect struct {
@@ -193,12 +193,6 @@ func init() {
 	if err := loadJson("files/races.json", &races); err != nil {
 		fmt.Printf("Error reading damage types %e", err)
 	}
-	if err := loadJson("files/weapons.json", &weapons); err != nil {
-		fmt.Printf("Error reading damage types %e", err)
-	}
-	if err := loadJson("files/armors.json", &armors); err != nil {
-		fmt.Printf("Error reading damage types %e", err)
-	}
 	//------------------------------------ FLAGS ------------------------------------------------
 	var flag_save = flag.Bool("save", false, "saving json on file")
 	flag.Parse()
@@ -209,10 +203,10 @@ func init() {
 	//------------------------------------ ENDFLAGS ------------------------------------------------
 	moves = []Move{
 		{
-			name:    "self-heal",
-			allowed: []int{classNameToId("Mage")},
-			desc:    "heals the caster",
-			move: func(caster *Character, chs *[]Character, queue *Queue) error {
+			Name:    "self-heal",
+			Allowed: []int{classNameToId("Mage")},
+			Desc:    "heals the caster",
+			Move: func(caster *Character, chs *[]Character, queue *Queue) error {
 				// caster heals himself
 				if (*caster).Hp+(10*int((*caster).Lvl)) > int((*caster).MaxHp) {
 					(*caster).Hp = int((*caster).MaxHp)
@@ -223,10 +217,10 @@ func init() {
 			},
 		},
 		{
-			name:    "attack",
-			allowed: []int{classNameToId("Mage"), classNameToId("Ranger"), classNameToId("Warrior"), classNameToId("Rogue")},
-			desc:    "use your weapon to attack one enemy",
-			move: func(caster *Character, chs *[]Character, queue *Queue) error {
+			Name:    "attack",
+			Allowed: []int{classNameToId("Mage"), classNameToId("Ranger"), classNameToId("Warrior"), classNameToId("Rogue")},
+			Desc:    "use your weapon to attack one enemy",
+			Move: func(caster *Character, chs *[]Character, queue *Queue) error {
 				var Damage = weapons[(*caster).Weapon].Damage
 				var DamageType = weapons[(*caster).Weapon].DamageType
 				// character uses his melee weapon to attack an enemy
@@ -253,10 +247,10 @@ func init() {
 			},
 		},
 		{
-			name:    "fireball",
-			allowed: []int{classNameToId("Mage")},
-			desc:    "the mage casts a huge fireball, hitting all the enemies",
-			move: func(caster *Character, chs *[]Character, queue *Queue) error {
+			Name:    "fireball",
+			Allowed: []int{classNameToId("Mage")},
+			Desc:    "the mage casts a huge fireball, hitting all the enemies",
+			Move: func(caster *Character, chs *[]Character, queue *Queue) error {
 
 				var Damage = 5
 				var DamageType = []int{DmgTypeId("Fire")}
@@ -279,10 +273,10 @@ func init() {
 			},
 		},
 		{
-			name:    "mind control",
-			allowed: []int{classNameToId("Mage")},
-			desc:    "the mage controls the mind of the enemy for ⌊lvl/2⌋+1 turns",
-			move: func(caster *Character, chs *[]Character, queue *Queue) error {
+			Name:    "mind control",
+			Allowed: []int{classNameToId("Mage")},
+			Desc:    "the mage controls the mind of the enemy for ⌊lvl/2⌋+1 turns",
+			Move: func(caster *Character, chs *[]Character, queue *Queue) error {
 
 				if (*caster).Focus == true {
 					return fmt.Errorf("caster does not have focus")
@@ -318,10 +312,10 @@ func init() {
 			},
 		},
 		{
-			name:    "poisonus dart",
-			allowed: []int{classNameToId("Rogue")},
-			desc:    "the attacker launches a poisoned dart, dealing 5 dmg and posioning the subject for 2*Lvl stacks",
-			move: func(caster *Character, chs *[]Character, queue *Queue) error {
+			Name:    "poisonus dart",
+			Allowed: []int{classNameToId("Rogue")},
+			Desc:    "the attacker launches a poisoned dart, dealing 5 dmg and posioning the subject for 2*Lvl stacks",
+			Move: func(caster *Character, chs *[]Character, queue *Queue) error {
 
 				var DamageArrow = weapons[(*caster).Weapon].Damage
 				var DamageTypeArrow = weapons[(*caster).Weapon].DamageType
@@ -348,6 +342,12 @@ func init() {
 				return nil
 			},
 		},
+	}
+	if err := loadJson("files/weapons.json", &weapons); err != nil {
+		fmt.Printf("Error reading damage types %e", err)
+	}
+	if err := loadJson("files/armors.json", &armors); err != nil {
+		fmt.Printf("Error reading damage types %e", err)
 	}
 
 	statusEffects = []StatusEffect{
@@ -622,9 +622,9 @@ func userHpStatus(char Character) HpStatus {
 
 func PrintMoves(class int, movest []Move) (ret string) {
 	for i, v := range movest {
-		for _, v1 := range v.allowed {
+		for _, v1 := range v.Allowed {
 			if class == v1 {
-				ret += fmt.Sprintf("\t %d - %s %s\n", i, v.name, v.desc)
+				ret += fmt.Sprintf("\t %d - %s %s\n", i, v.Name, v.Desc)
 				break
 			}
 		}
@@ -702,10 +702,10 @@ func loadJson[T any](FileName string, inp T) error {
 }
 
 func action(move Move, user *Character, targets *[]Character, queue *Queue) error {
-	if IndexOf(move.allowed, (*user).Class, func(v1 int, v2 int) bool { return v1 == v2 }) == -1 {
-		return fmt.Errorf("%v is not allowed to use %v", idToClass((*user).Class), move.name)
+	if IndexOf(move.Allowed, (*user).Class, func(v1 int, v2 int) bool { return v1 == v2 }) == -1 {
+		return fmt.Errorf("%v is not allowed to use %v", idToClass((*user).Class), move.Name)
 	}
-	if err := move.move(user, targets, queue); err != nil {
+	if err := move.Move(user, targets, queue); err != nil {
 		fmt.Println(err.Error())
 	}
 	return nil

@@ -8,7 +8,7 @@ import (
 )
 
 func serializer() {
-	fmt.Println("testttt")
+	fmt.Println("serializing data")
 
 	armors = []Armor{
 		{
@@ -58,12 +58,16 @@ func serializer() {
 			Damage: 10,
 		},
 	}
+	//fmt.Println(moves)
 	if err := WriteJson("files/armors.json", &armors); err != nil {
 		fmt.Printf("Error writing armors %e", err)
 	}
 	if err := WriteJson("files/weapons.json", &weapons); err != nil {
 		fmt.Printf("Error writing weapons %e", err)
 	}
+	// if err := WriteJson("files/moves.json", &moves); err != nil {
+	// 	fmt.Printf("Error writing moves %e", err)
+	// }
 	os.Exit(0)
 }
 func WriteJson[T any](FileName string, inp T) error {
