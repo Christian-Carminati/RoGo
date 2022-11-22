@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	_ "strconv"
 )
@@ -40,6 +40,26 @@ func ArmorId(name string) int {
 	return IndexOf(armors, name, func(v1 Armor, v2 string) bool {
 		return v1.Name == v2
 	})
+}
+func idToClass(i int) string {
+	return classes[i].Name
+}
+
+func classNameToId(name string) int {
+	for i, v := range classes {
+		if v.Name == name {
+			return i
+		}
+	}
+	return 0
+}
+func raceNameToId(name string) int {
+	for i, v := range races {
+		if v.Name == name {
+			return i
+		}
+	}
+	return 0
 }
 
 func bubbleSort[T any](arr *[]T, compare func(c1 T, c2 T) bool) {
@@ -115,11 +135,12 @@ type Character struct {
 	//skill
 	Lvl   uint `json:"Lvl"`
 	Class int  `json:"Class"`
+	Race  int  `json:"Race"`
 	Init  int  `json:"Init"`
 	//weapon and armor
-	Armor       int `json:"Armor"`
-	Weapon      int `json:"Weapon"`
-	Resistences map[int]float64
+	Armor       int             `json:"Armor"`
+	Weapon      int             `json:"Weapon"`
+	Resistences map[int]float64 // es: 9 5.0 = aggiunge +5 in resistenza nel tipo di danno 9
 }
 
 type Move struct {
@@ -162,6 +183,7 @@ var armors []Armor
 var weapons []Weapon
 
 func init() {
+
 	if err := loadJson("files/classes.json", &classes); err != nil {
 		fmt.Printf("Error reading classes %e", err)
 	}
@@ -171,54 +193,20 @@ func init() {
 	if err := loadJson("files/races.json", &races); err != nil {
 		fmt.Printf("Error reading damage types %e", err)
 	}
-	armors = []Armor{
-		{
-			Name: "Old Rusty Chainmail",
-			Resistences: map[int]float64{
-				DmgTypeId("Slashing"): 0.6,
-				DmgTypeId("Piercing"): 0.2,
-			},
-		},
-		{
-			Name: "Damaged Plate Armor",
-			Resistences: map[int]float64{
-				DmgTypeId("Piercing"):    0.6,
-				DmgTypeId("Bludgeoning"): 0.4,
-				DmgTypeId("Slashing"):    0.2,
-			},
-		},
+	if err := loadJson("files/weapons.json", &weapons); err != nil {
+		fmt.Printf("Error reading damage types %e", err)
 	}
-	weapons = []Weapon{
-		{
-			Name: "Longsword",
-			DamageType: []int{
-				DmgTypeId("Slashing"),
-			},
-			Damage: 8,
-		},
-		{
-			Name: "Spear",
-			DamageType: []int{
-				DmgTypeId("Piercing"),
-			},
-			Damage: 4,
-		},
-		{
-			Name: "Iron Mace",
-			DamageType: []int{
-				DmgTypeId("Bludgeoning"),
-			},
-			Damage: 15,
-		},
-		{
-			Name: "Crossbow",
-			DamageType: []int{
-				DmgTypeId("Piercing"),
-			},
-			Damage: 10,
-		},
+	if err := loadJson("files/armors.json", &armors); err != nil {
+		fmt.Printf("Error reading damage types %e", err)
 	}
-
+	//------------------------------------ FLAGS ------------------------------------------------
+	var flag_save = flag.Bool("save", false, "saving json on file")
+	flag.Parse()
+	fmt.Println(*flag_save)
+	if *flag_save {
+		serializer()
+	}
+	//------------------------------------ ENDFLAGS ------------------------------------------------
 	moves = []Move{
 		{
 			name:    "self-heal",
@@ -270,7 +258,7 @@ func init() {
 			desc:    "the mage casts a huge fireball, hitting all the enemies",
 			move: func(caster *Character, chs *[]Character, queue *Queue) error {
 
-				var Damage = 10
+				var Damage = 5
 				var DamageType = []int{DmgTypeId("Fire")}
 
 				// fireball deals AOE damage, it also targets the dead
@@ -433,27 +421,22 @@ func init() {
 			},
 		},
 	}
-	if err := WriteJson("files/armors.json", &armors); err != nil {
-		fmt.Printf("Error writing armors %e", err)
-	}
-	if err := WriteJson("files/weapons.json", &weapons); err != nil {
-		fmt.Printf("Error writing weapons %e", err)
-	}
+
 }
 
 func main() {
 
-	for protType, protVal := range classes[1].Resistences {
-		fmt.Println(protType, protVal)
+	characters := []Character{
+		{Id: 0, Name: "pippo", Lvl: 2, MaxHp: 20, Hp: 20, Init: 1, Incap: 40, Status: make(map[int]int), Resistences: map[int]float64{9: 5.0, 11: 3.0}, Class: classNameToId("Mage"), Race: raceNameToId("Dwarf"), Weapon: WeaponId("Longsword"), Armor: ArmorId("Old Rusty Chainmail"), Friendly: true},
+		{Id: 1, Name: "taver", Lvl: 1, MaxHp: 40, Hp: 40, Init: 6, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"), Race: raceNameToId("Dwarf"), Weapon: WeaponId("Iron Mace"), Armor: ArmorId("Damaged Plate Armor"), Friendly: true},
+		{Id: 2, Name: "mario", Lvl: 1, MaxHp: 15, Hp: 15, Init: 5, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage"), Race: raceNameToId("Dwarf"), Weapon: WeaponId("Spear"), Armor: ArmorId("Old Rusty Chainmail")},
+		{Id: 3, Name: "cocaa", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Status: make(map[int]int), Class: classNameToId("Rogue"), Race: raceNameToId("Dwarf"), Weapon: WeaponId("Crossbow"), Armor: ArmorId("Damaged Plate Armor")},
+		{Id: 4, Name: "nello", Lvl: 1, MaxHp: 20, Hp: 20, Init: 4, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"), Race: raceNameToId("Dwarf"), Weapon: WeaponId("Spear"), Armor: ArmorId("Old Rusty Chainmail")},
 	}
 
-	characters := []Character{
-		{Id: 0, Name: "pippo", Lvl: 2, MaxHp: 20, Hp: 20, Init: 1, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage"), Weapon: WeaponId("Longsword"), Armor: ArmorId("Old Rusty Chainmail"), Friendly: true},
-		{Id: 1, Name: "taver", Lvl: 1, MaxHp: 40, Hp: 40, Init: 6, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"), Weapon: WeaponId("Iron Mace"), Armor: ArmorId("Damaged Plate Armor"), Friendly: true},
-		{Id: 2, Name: "mario", Lvl: 1, MaxHp: 15, Hp: 15, Init: 5, Incap: 40, Status: make(map[int]int), Class: classNameToId("Mage"), Weapon: WeaponId("Spear"), Armor: ArmorId("Old Rusty Chainmail")},
-		{Id: 3, Name: "cocaa", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Status: make(map[int]int), Class: classNameToId("Rogue"), Weapon: WeaponId("Crossbow"), Armor: ArmorId("Damaged Plate Armor")},
-		{Id: 4, Name: "nello", Lvl: 1, MaxHp: 20, Hp: 20, Init: 4, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"), Weapon: WeaponId("Spear"), Armor: ArmorId("Old Rusty Chainmail")},
-	}
+	fmt.Println()
+	fmt.Println(characters[0].Resistences)
+	fmt.Println()
 
 	var queue Queue
 	roundQueue := &queue
@@ -543,16 +526,58 @@ func main() {
 // using character as argument instead of armor
 func calculateDamageProtection(weaponDamageTypes *[]int, chs *Character) float64 {
 	//fmt.Println((*weapon), (*armor),(*armor).Resistences)
+	//class races armors
+
 	perc := 100.0
+	fmt.Println()
+	fmt.Println("armor resistences")
+	fmt.Println()
 	for protType, protVal := range armors[(*chs).Armor].Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				//fmt.Println(perc,len(*weaponDamageTypes), (*weaponDamageTypes), (*armor).Resistences ,protVal)
-				perc -= (100 / float64(len(*weaponDamageTypes))) * protVal
+				fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), armors[(*chs).Armor].Resistences, protVal)
+				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
 				break
 			}
 		}
 	}
+	fmt.Println()
+	fmt.Println("class resistences")
+	fmt.Println()
+	for protType, protVal := range classes[(*chs).Class].Resistences {
+		for _, dmgType := range *weaponDamageTypes {
+			if protType == dmgType {
+				fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), classes[(*chs).Class].Resistences, protVal)
+				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
+				break
+			}
+		}
+	}
+	fmt.Println()
+	fmt.Println("races resistences")
+	fmt.Println()
+	for protType, protVal := range races[(*chs).Class].Resistences {
+		for _, dmgType := range *weaponDamageTypes {
+			if protType == dmgType {
+				fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), races[(*chs).Class].Resistences, protVal)
+				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
+				break
+			}
+		}
+	}
+	fmt.Println()
+	fmt.Println("character bonus resistences")
+	fmt.Println()
+	for protType, protVal := range (*chs).Resistences {
+		for _, dmgType := range *weaponDamageTypes {
+			if protType == dmgType {
+				fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), (*chs).Resistences, protVal)
+				perc -= protVal / float64(len(*weaponDamageTypes))
+				break
+			}
+		}
+	}
+	fmt.Println(perc)
 	return perc / 100.0
 }
 
@@ -656,25 +681,6 @@ func formatChar(char Character) string {
 	}
 
 	return fmt.Sprintf(" %c  lvl %d | %s | %s | %s | %T ", isAlly, char.Lvl, char.Name, idToClass(char.Class), HpStatus, char.Status)
-}
-
-func idToClass(i int) string {
-	return classes[i].Name
-}
-
-func classNameToId(name string) int {
-	for i, v := range classes {
-		if v.Name == name {
-			return i
-		}
-	}
-	return 0
-}
-func WriteJson[T any](FileName string, inp T) error {
-	file, _ := json.MarshalIndent(inp, "", "\t")
-
-	err := ioutil.WriteFile(FileName, file, 0644)
-	return err
 }
 
 func loadJson[T any](FileName string, inp T) error {

@@ -9,9 +9,10 @@
 	{
 		"Name": "Spear",
 		"DamageType": [
-			9
+			9,
+			11
 		],
-		"Damage": 4
+		"Damage": 20
 	},
 	{
 		"Name": "Iron Mace",
