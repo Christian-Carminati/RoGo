@@ -23,11 +23,14 @@ func init() {
 }
 
 func SingleSelector[T any, S interface{}](title string, elements *[]T, vars S, filter func(element T, vars S) bool) int {
+
 	fmt.Println(title)
 	cont := 0
-	for _, v := range *elements {
+	mapRetIndex := make(map[int]int)
+	for i, v := range *elements {
 		if filter(v, vars) {
 			fmt.Print("\t", cont, ": ", v, "\n" )
+			mapRetIndex[cont] = i
 			cont++
 		}
 	}
@@ -51,15 +54,17 @@ func SingleSelector[T any, S interface{}](title string, elements *[]T, vars S, f
  		cursor.ClearLinesUp(1)
 		opt = fmt.Sprintf("input must be between [0, %d) ", cont)
 	}
-	return inp
+	return mapRetIndex[inp]
 }
 
 func multipleSelector[T any, S interface{}](title string, elements *[]T, maxInp int, vars S, filter func(element T, vars S) bool) []int {
 	fmt.Println(title)
 	cont := 0
-	for _, v := range *elements {
+	mapRetIndex := make(map[int]int)
+	for i, v := range *elements {
 		if filter(v, vars) {
 			fmt.Print("\t", cont, ": ", v, "\n" )
+			mapRetIndex[cont] = i
 			cont++
 		}
 	}
@@ -107,7 +112,11 @@ func multipleSelector[T any, S interface{}](title string, elements *[]T, maxInp 
 			}
 
 			if success {
-				return inp
+				var ret []int
+				for _, v := range inp {
+					ret = append(ret, mapRetIndex[v])
+				}
+				return ret
 			}
 		}
  		cursor.ClearLinesUp(1)
