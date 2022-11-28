@@ -8,13 +8,11 @@ import (
 	"strconv"
 
 	"atomicgo.dev/cursor"
-	_ "github.com/gosuri/uilive"
 )
 
 var regexMatchSingleChar *regexp.Regexp
 var regexMatchMultipleChars *regexp.Regexp
 var regexSplitWs *regexp.Regexp
-
 
 func init() {
 	regexMatchSingleChar = regexp.MustCompile(`^\s*(?P<number>\d+)\s*\n$`)
@@ -29,7 +27,7 @@ func SingleSelector[T any, S interface{}](title string, elements *[]T, vars S, f
 	mapRetIndex := make(map[int]int)
 	for i, v := range *elements {
 		if filter(v, vars) {
-			fmt.Print("\t", cont, ": ", v, "\n" )
+			fmt.Print("\t", cont, ": ", v, "\n")
 			mapRetIndex[cont] = i
 			cont++
 		}
@@ -39,7 +37,7 @@ func SingleSelector[T any, S interface{}](title string, elements *[]T, vars S, f
 	var opt string
 	for {
 		inp = -1
-		fmt.Print("\r"+opt+"press a number to select: ")
+		fmt.Print("\r" + opt + "press a number to select: ")
 		r := bufio.NewReader(os.Stdin)
 		input, _ := r.ReadString('\n')
 
@@ -51,7 +49,7 @@ func SingleSelector[T any, S interface{}](title string, elements *[]T, vars S, f
 		if inp >= 0 && inp <= cont-1 {
 			break
 		}
- 		cursor.ClearLinesUp(1)
+		cursor.ClearLinesUp(1)
 		opt = fmt.Sprintf("input must be between [0, %d) ", cont)
 	}
 	return mapRetIndex[inp]
@@ -63,7 +61,7 @@ func multipleSelector[T any, S interface{}](title string, elements *[]T, maxInp 
 	mapRetIndex := make(map[int]int)
 	for i, v := range *elements {
 		if filter(v, vars) {
-			fmt.Print("\t", cont, ": ", v, "\n" )
+			fmt.Print("\t", cont, ": ", v, "\n")
 			mapRetIndex[cont] = i
 			cont++
 		}
@@ -73,14 +71,14 @@ func multipleSelector[T any, S interface{}](title string, elements *[]T, maxInp 
 	var opt string
 	for {
 		inp = []int{}
-		fmt.Print("\r"+opt+"press a number to select: ")
+		fmt.Print("\r" + opt + "press a number to select: ")
 		r := bufio.NewReader(os.Stdin)
 		input, _ := r.ReadString('\n')
 
 		if regexMatchMultipleChars.MatchString(input) {
 			success := true
 			match1 := regexMatchMultipleChars.FindStringSubmatch(input)
-			inputs := regexSplitWs.Split( match1[regexMatchMultipleChars.SubexpIndex("args")], -1 )
+			inputs := regexSplitWs.Split(match1[regexMatchMultipleChars.SubexpIndex("args")], -1)
 
 			if maxInp != -1 && len(inputs) > maxInp {
 				opt = fmt.Sprint("too many inputs, max is ", maxInp, " ")
@@ -89,7 +87,7 @@ func multipleSelector[T any, S interface{}](title string, elements *[]T, maxInp 
 
 			// check for duplicates
 			for i, v := range inputs {
-				for _, v2 := range inputs[i+1:]{
+				for _, v2 := range inputs[i+1:] {
 					if v == v2 {
 						success = false
 						break
@@ -119,7 +117,7 @@ func multipleSelector[T any, S interface{}](title string, elements *[]T, maxInp 
 				return ret
 			}
 		}
- 		cursor.ClearLinesUp(1)
+		cursor.ClearLinesUp(1)
 		opt = fmt.Sprintf("input invalid, all inputs must be between [0, %d) ", cont)
 	}
 }
