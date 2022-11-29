@@ -88,17 +88,6 @@ func loadFuncs() {
 					return fmt.Errorf("caster does not have focus")
 				}
 
-				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
-				// var prompt string
-				// for i, v := range *chs {
-				// 	// fmt.Println(v.Friendly,caster.Friendly)
-				// 	_, okMindC := v.Status[1]
-				// 	_, okCMind := v.Status[2]
-				// 	if v.Friendly != caster.Friendly && v.Hp > 0-int(v.MaxHp) && !okMindC && !okCMind {
-				// 		prompt += fmt.Sprintf("\t%d : %s \n", i, formatChar(v)) //fmt.Sprintf("\t%d : %s %s\n", i, v.Name, idToClass(v.Class))
-				// 	}
-				// }
-				// i := GetUserInput("who do you want to control?\n" + prompt)
 				i := SingleSelector("who do you want to control?\n", chs, struct{ caster *Character }{caster: caster}, func(enemy Character, input struct{ caster *Character }) bool {
 					_, okMindC := enemy.Status[1]
 					_, okCMind := enemy.Status[2]
@@ -132,16 +121,6 @@ func loadFuncs() {
 				var DamageTypeArrow = weapons[(*caster).Weapon].DamageType
 				var stack = 5
 
-				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
-
-				//var prompt string
-				// for i, v := range *chs {
-				// 	// fmt.Println(v.Friendly,caster.Friendly)
-				// 	if v.Friendly != caster.Friendly && v.Hp > 0-int(v.MaxHp) {
-				// 		prompt += fmt.Sprintf("\t%d : %s \n", i, formatChar(v)) //fmt.Sprintf("\t%d : %s %s\n", i, v.Name, idToClass(v.Class))
-				// 	}
-				// }
-				// i := GetUserInput("who do you want to attack?\n" + prompt)
 				i := SingleSelector("who do you want to attack?\n", chs, struct{ caster *Character }{caster: caster}, func(enemy Character, input struct{ caster *Character }) bool {
 
 					return enemy.Friendly != input.caster.Friendly && enemy.Hp > 0-int(enemy.MaxHp)
