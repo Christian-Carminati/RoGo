@@ -264,9 +264,9 @@ func main() {
 		roundQueue.Add(charIndex)
 
 		fmt.Println()
-		fmt.Println(0, ":"+formatChar(*char))
+		fmt.Println(0, ":"+printCharacters(*char))
 		for i, v := range queue[:len(queue)-1] {
-			fmt.Println(i+1, ":"+formatChar(characters[v]))
+			fmt.Println(i+1, ":"+printCharacters(characters[v]))
 		}
 
 		fmt.Println()
@@ -425,47 +425,6 @@ func GetUserInput(prompt string) (ret int) {
 }
 
 /* ---------------------------- */
-
-func formatChar(char Character) string {
-
-	var HpStatus string
-	uhs := userHpStatus(char)
-
-	switch uhs {
-	case Mutil:
-		HpStatus = "MUTIL"
-	case Dead:
-		HpStatus = "DEAD "
-	case Incap:
-		HpStatus = "INCAP"
-	default:
-		if char.Hp == int(char.MaxHp) {
-			// char has not been hit
-			HpStatus = "NOHIT"
-		} else if char.Hp > int(float64(char.MaxHp)*0.66) {
-			// char is lightly damaged
-			// at this stage mages and other fragile classes are already almost incapacitated
-			HpStatus = "DAMGD"
-		} else if char.Hp > int(float64(char.MaxHp)*0.33) {
-			// char is wounded
-			// this mostly applies to tough classes
-			// at this stage median classes like the ranger are almost incapacitated
-			HpStatus = "WOUND"
-		} else {
-			// char is at the dead door
-			// the character is basically dead
-			HpStatus = "DDOOR"
-		}
-	}
-
-	isAlly := ' '
-	if char.Friendly {
-		isAlly = '⚝'
-	}
-
-	return fmt.Sprintf(" %c  lvl %d | %s | %s | %s | %T ", isAlly, char.Lvl, char.Name, idToClass(char.Class), HpStatus, char.Status)
-}
-
 func loadJson[T any](FileName string, inp T) error {
 	content, err := os.ReadFile(FileName)
 	if err != nil {
