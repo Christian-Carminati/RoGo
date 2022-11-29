@@ -383,6 +383,16 @@ func PrintMoves(class int, movest []Move) (ret string) {
 	return
 }
 
+/* PROOF OF CONCEPT COMMAND API */
+func GetUserInput(prompt string) (ret int) {
+
+	fmt.Println(prompt)
+
+	fmt.Scan(&ret)
+	return
+}
+
+/* ---------------------------- */
 func loadJson[T any](FileName string, inp T) error {
 	content, err := os.ReadFile(FileName)
 	if err != nil {
