@@ -196,7 +196,6 @@ func init() {
 	//------------------------------------ FLAGS ------------------------------------------------
 	var flag_save = flag.Bool("save", false, "saving json on file")
 	flag.Parse()
-	fmt.Println(*flag_save)
 	if *flag_save {
 		serializer()
 	}
@@ -221,10 +220,6 @@ func main() {
 		{Id: 3, Name: "cocaa", Lvl: 1, MaxHp: 20, Hp: 20, Init: 2, Incap: 30, Status: make(map[int]int), Class: classNameToId("Rogue"), Race: raceNameToId("Dwarf"), Weapon: WeaponId("Crossbow"), Armor: ArmorId("Damaged Plate Armor")},
 		{Id: 4, Name: "nello", Lvl: 1, MaxHp: 20, Hp: 20, Init: 4, Incap: 10, Status: make(map[int]int), Class: classNameToId("Warrior"), Race: raceNameToId("Dwarf"), Weapon: WeaponId("Spear"), Armor: ArmorId("Old Rusty Chainmail")},
 	}
-
-	fmt.Println()
-	fmt.Println(characters[0].Resistences)
-	fmt.Println()
 
 	var queue Queue
 	roundQueue := &queue
@@ -312,55 +307,55 @@ func calculateDamageProtection(weaponDamageTypes *[]int, chs *Character) float64
 	//class races armors
 
 	perc := 100.0
-	fmt.Println()
-	fmt.Println("armor resistences")
-	fmt.Println()
+	// fmt.Println()
+	// fmt.Println("armor resistences")
+	// fmt.Println()
 	for protType, protVal := range armors[(*chs).Armor].Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), armors[(*chs).Armor].Resistences, protVal)
+				//fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), armors[(*chs).Armor].Resistences, protVal)
 				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
 				break
 			}
 		}
 	}
-	fmt.Println()
-	fmt.Println("class resistences")
-	fmt.Println()
+	// fmt.Println()
+	// fmt.Println("class resistences")
+	// fmt.Println()
 	for protType, protVal := range classes[(*chs).Class].Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), classes[(*chs).Class].Resistences, protVal)
+				//fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), classes[(*chs).Class].Resistences, protVal)
 				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
 				break
 			}
 		}
 	}
-	fmt.Println()
-	fmt.Println("races resistences")
-	fmt.Println()
+	// fmt.Println()
+	// fmt.Println("races resistences")
+	// fmt.Println()
 	for protType, protVal := range races[(*chs).Class].Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), races[(*chs).Class].Resistences, protVal)
+				//fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), races[(*chs).Class].Resistences, protVal)
 				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
 				break
 			}
 		}
 	}
-	fmt.Println()
-	fmt.Println("character bonus resistences")
-	fmt.Println()
+	// fmt.Println()
+	// fmt.Println("character bonus resistences")
+	// fmt.Println()
 	for protType, protVal := range (*chs).Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), (*chs).Resistences, protVal)
+				//fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), (*chs).Resistences, protVal)
 				perc -= protVal / float64(len(*weaponDamageTypes))
 				break
 			}
 		}
 	}
-	fmt.Println(perc)
+	//fmt.Println(perc)
 	return perc / 100.0
 }
 
