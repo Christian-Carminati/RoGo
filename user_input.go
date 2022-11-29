@@ -121,3 +121,91 @@ func multipleSelector[T any, S interface{}](title string, elements *[]T, maxInp 
 		opt = fmt.Sprintf("input invalid, all inputs must be between [0, %d) ", cont)
 	}
 }
+
+func NSpaces ( n int ) string {
+	ret := ""
+	for i := 0; i < n; i++ {
+		ret += " "
+	}
+	return ret
+}
+
+func printCharacters(chs *[]Character) {
+
+	maxLenName := 0
+
+	for _, char := range *chs {
+		if chnamelen := len(char.Name); chnamelen > maxLenName {
+			maxLenName = chnamelen
+		}
+	}
+
+	maxLenClass := 0
+
+	for _, char := range *chs {
+		if chclasslen := len(idToClass(char.Class)); chclasslen > maxLenClass {
+			maxLenClass = chclasslen
+		}
+	}
+
+	maxLenLvl := 0
+
+	for _, char := range *chs {
+		if chlvllen := len(fmt.Sprint(char.Lvl)); chlvllen > maxLenLvl {
+			maxLenLvl = chlvllen
+		}
+	}
+
+	for _, char := range *chs {
+		var HpStatus string
+		uhs := userHpStatus(char)
+
+		switch uhs {
+		case Mutil:
+			HpStatus = "MUTIL"
+		case Dead:
+			HpStatus = "DEAD "
+		case Incap:
+			HpStatus = "INCAP"
+		default:
+			if char.Hp == int(char.MaxHp) {
+				// character has not been hit
+				HpStatus = "NOHIT"
+			} else if char.Hp > int(float64(char.MaxHp)*0.66) {
+				// character is lightly damaged
+				// at this stage mages and other fragile classes are already almost incapacitated
+				HpStatus = "DAMGD"
+			} else if char.Hp > int(float64(char.MaxHp)*0.33) {
+				// character is wounded
+				// this mostly applies to tough classes
+				// at this stage median classes like the ranger are almost incapacitated
+				HpStatus = "WOUND"
+			} else {
+				// character is at the dead door
+				// the character is basically dead
+				HpStatus = "DDOOR"
+			}
+		}
+
+		isAlly := ' '
+		if char.Friendly {
+			isAlly = '⚝'
+		}
+
+		effectsString := ""
+
+		for key, val := range char.Status {
+			effectsString += fmt.Sprint( statusEffects[key].name, ": ", val, " " )
+		}
+
+		fmt.Printf(
+			" %c  lvl %d%s | %s%s | %s%s | %s | %s\n",
+			isAlly,
+			char.Lvl, NSpaces(maxLenLvl-len(fmt.Sprint(char.Lvl))),
+			char.Name, NSpaces(maxLenName-len(char.Name)),
+			idToClass(char.Class), NSpaces(maxLenClass-len(idToClass(char.Class))),
+			HpStatus,
+			effectsString,
+		)
+	}
+}

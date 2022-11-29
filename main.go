@@ -247,22 +247,20 @@ func main() {
 		char := &(characters[charIndex])
 
 		for key := range (*char).Status {
-			//val := (*char).Status[key]
-			/*if val == 0 {
-				statusEffects[key].endEffect(key, char, &characters, roundQueue)
-				continue
-			}*/
-			//fmt.Printf("Porcoddio: %p\n", char)
 			statusEffects[key].effect(key, char, &characters, roundQueue)
 		}
 
 		roundQueue.Add(charIndex)
 
-		fmt.Println()
-		fmt.Println(0, ":"+formatChar(*char))
-		for i, v := range queue[:len(queue)-1] {
-			fmt.Println(i+1, ":"+formatChar(characters[v]))
+
+		// temporary array to print characters
+		temporary := &[]Character{ *(char) }
+		for _, v := range queue[:len(queue)-1] {
+			*(temporary) = append(*(temporary), characters[v])
 		}
+		printCharacters(temporary)
+		temporary = nil
+		// stop printing characters
 
 		fmt.Println()
 
@@ -285,13 +283,6 @@ func main() {
 		if mv == -1 {
 			continue
 		}
-
-		// if ((*char).Hp <= 0) {
-		// 	fmt.Println("character is death\n")
-		// 	characters = characters[]
-
-		// 	continue
-		// }
 
 		if err := action(moves[mv], char, &characters, roundQueue); err != nil {
 			fmt.Println(err)
@@ -420,47 +411,6 @@ func GetUserInput(prompt string) (ret int) {
 }
 
 /* ---------------------------- */
-
-func formatChar(char Character) string {
-
-	var HpStatus string
-	uhs := userHpStatus(char)
-
-	switch uhs {
-	case Mutil:
-		HpStatus = "MUTIL"
-	case Dead:
-		HpStatus = "DEAD "
-	case Incap:
-		HpStatus = "INCAP"
-	default:
-		if char.Hp == int(char.MaxHp) {
-			// char has not been hit
-			HpStatus = "NOHIT"
-		} else if char.Hp > int(float64(char.MaxHp)*0.66) {
-			// char is lightly damaged
-			// at this stage mages and other fragile classes are already almost incapacitated
-			HpStatus = "DAMGD"
-		} else if char.Hp > int(float64(char.MaxHp)*0.33) {
-			// char is wounded
-			// this mostly applies to tough classes
-			// at this stage median classes like the ranger are almost incapacitated
-			HpStatus = "WOUND"
-		} else {
-			// char is at the dead door
-			// the character is basically dead
-			HpStatus = "DDOOR"
-		}
-	}
-
-	isAlly := ' '
-	if char.Friendly {
-		isAlly = '⚝'
-	}
-
-	return fmt.Sprintf(" %c  lvl %d | %s | %s | %s | %T ", isAlly, char.Lvl, char.Name, idToClass(char.Class), HpStatus, char.Status)
-}
-
 func loadJson[T any](FileName string, inp T) error {
 	content, err := os.ReadFile(FileName)
 	if err != nil {
