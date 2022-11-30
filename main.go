@@ -252,9 +252,8 @@ func main() {
 
 		roundQueue.Add(charIndex)
 
-
 		// temporary array to print characters
-		temporary := &[]Character{ *(char) }
+		temporary := &[]Character{*(char)}
 		for _, v := range queue[:len(queue)-1] {
 			*(temporary) = append(*(temporary), characters[v])
 		}
@@ -278,7 +277,24 @@ func main() {
 
 		fmt.Println(*char, "Hp del pg: ", (*char).Hp)
 
-		mv := GetUserInput(PrintMoves((*char).Class, moves) + "\n -1 to pass turn")
+		//mv := GetUserInput(PrintMoves((*char).Class, moves) + "\n -1 to pass turn")
+		mv := SingleSelector("", &moves, struct{ caster *Character }{caster: char}, func(v Move, chs struct{ caster *Character }) bool {
+			for _, v1 := range v.Allowed {
+				if int(chs.caster.Id) == v1 {
+					return true
+				}
+			}
+			return false
+		})
+		// for i, v := range moves {
+		// 	for _, v1 := range v.Allowed {
+		// 		if int((*char).Id) == v1 {
+		// 			ret += fmt.Sprintf("\t %d - %s %s\n", i, v.Name, v.Desc)
+		// 			break
+		// 		}
+		// 	}
+		// }
+		//return
 
 		if mv == -1 {
 			continue
