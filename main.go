@@ -294,59 +294,41 @@ func main() {
 
 // using character as argument instead of armor
 func calculateDamageProtection(weaponDamageTypes *[]int, chs *Character) float64 {
-	//fmt.Println((*weapon), (*armor),(*armor).Resistences)
 	//class races armors
 
 	perc := 100.0
-	// fmt.Println()
-	// fmt.Println("armor resistences")
-	// fmt.Println()
 	for protType, protVal := range armors[(*chs).Armor].Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				//fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), armors[(*chs).Armor].Resistences, protVal)
 				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
 				break
 			}
 		}
 	}
-	// fmt.Println()
-	// fmt.Println("class resistences")
-	// fmt.Println()
 	for protType, protVal := range classes[(*chs).Class].Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				//fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), classes[(*chs).Class].Resistences, protVal)
 				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
 				break
 			}
 		}
 	}
-	// fmt.Println()
-	// fmt.Println("races resistences")
-	// fmt.Println()
 	for protType, protVal := range races[(*chs).Class].Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				//fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), races[(*chs).Class].Resistences, protVal)
 				perc -= (perc / float64(len(*weaponDamageTypes))) * protVal
 				break
 			}
 		}
 	}
-	// fmt.Println()
-	// fmt.Println("character bonus resistences")
-	// fmt.Println()
 	for protType, protVal := range (*chs).Resistences {
 		for _, dmgType := range *weaponDamageTypes {
 			if protType == dmgType {
-				//fmt.Println(perc, len(*weaponDamageTypes), (*weaponDamageTypes), (*chs).Resistences, protVal)
 				perc -= protVal / float64(len(*weaponDamageTypes))
 				break
 			}
 		}
 	}
-	//fmt.Println(perc)
 	return perc / 100.0
 }
 
@@ -401,16 +383,6 @@ func PrintMoves(class int, movest []Move) (ret string) {
 	return
 }
 
-/* PROOF OF CONCEPT COMMAND API */
-func GetUserInput(prompt string) (ret int) {
-
-	fmt.Println(prompt)
-
-	fmt.Scan(&ret)
-	return
-}
-
-/* ---------------------------- */
 func loadJson[T any](FileName string, inp T) error {
 	content, err := os.ReadFile(FileName)
 	if err != nil {
@@ -422,10 +394,6 @@ func loadJson[T any](FileName string, inp T) error {
 		return err
 	}
 
-	// for _, v := range Classes{
-	// 	log.Println(v.Id)
-	// 	log.Println(v.Name)
-	// }
 	return nil
 }
 

@@ -27,14 +27,11 @@ func loadFuncs() {
 				var DamageType = weapons[(*caster).Weapon].DamageType
 				// character uses his melee weapon to attack an enemy
 
-				//fmt.Println(*chs)
-				/* PROOF OF CONCEPT, A REAL API IS NEEDED */
 				attacked := SingleSelector("who do you want to attack?\n", chs, struct{ caster *Character }{caster: caster}, func(enemy Character, input struct{ caster *Character }) bool {
 
 					return enemy.Friendly != input.caster.Friendly && enemy.Hp > 0-int(enemy.MaxHp)
 				})
 
-				//fmt.Println(int(calculateDamageProtection(&weapons[(*caster).Weapon].DamageType,&armors[(*chs)[attacked].Armor]) * float64(weapons[(*caster).Weapon].Damage) * float64((*caster).Lvl)))
 				(*chs)[attacked].Hp -= int(calculateDamageProtection(&DamageType, &(*chs)[attacked]) * float64(Damage) * float64((*caster).Lvl))
 				return nil
 			},
@@ -51,11 +48,10 @@ func loadFuncs() {
 				var title = "Who do you want to attack? (select multiple targets up to " + fmt.Sprint(max_targets) + " )\n"
 				// fireball deals AOE damage, it also targets the dead
 
-				// not even sure this is needed
-
 				attacked := multipleSelector(title, chs, max_targets, struct{ caster *Character }{caster: caster}, func(enemy Character, input struct{ caster *Character }) bool {
 					return enemy.Friendly != input.caster.Friendly
 				})
+
 				for _, v := range attacked {
 
 					(*chs)[v].Hp -= Damage * int(calculateDamageProtection(&DamageType, &(*chs)[v])) * int((*caster).Lvl)
@@ -78,7 +74,6 @@ func loadFuncs() {
 					_, okCMind := enemy.Status[2]
 					return enemy.Friendly != caster.Friendly && enemy.Hp > 0-int(enemy.MaxHp) && !okMindC && !okCMind
 				})
-				/* ------------------------------------- */
 
 				(*chs)[i].Friendly = !(*chs)[i].Friendly
 				(*chs)[i].Focus = true
@@ -110,7 +105,6 @@ func loadFuncs() {
 
 					return enemy.Friendly != input.caster.Friendly && enemy.Hp > 0-int(enemy.MaxHp)
 				})
-				/* ------------------------------------- */
 
 				(*chs)[i].Hp -= int(calculateDamageProtection(&DamageTypeArrow, &(*chs)[i]) * float64(DamageArrow) * float64((*caster).Lvl))
 
@@ -148,11 +142,9 @@ func loadFuncs() {
 			desc: "the character changes factions",
 			effect: func(key int, caster *Character, chs *[]Character, queue *Queue) error {
 
-				//fmt.Println("DEBUG: ", *caster)
 				(*caster).Focus = true
 
 				if (*caster).Status[key] <= 0 {
-					//(*caster).Friendly = !(*caster).Friendly
 					statusEffects[key].endEffect(key, caster, chs, queue)
 				}
 				(*caster).Status[key]--
@@ -163,23 +155,13 @@ func loadFuncs() {
 				(*caster).Friendly = !(*caster).Friendly
 				(*caster).Focus = false
 
-				/*fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
-				fmt.Println(caster)*/
-
 				for i := range *chs {
-					//val, ok := (*chs)[i].Status[2]
-					//fmt.Println(val, ok, "|", (*caster).Id )
 					if val, ok := (*chs)[i].Status[2]; ok && val == int((*caster).Id) {
-						//fmt.Println((*chs)[i])
 						statusEffects[2].endEffect(2, &((*chs)[i]), chs, queue)
 					}
 				}
 
-				/*fmt.Println("dehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
-				fmt.Printf("Porcoddio: %p\n", caster)
-				fmt.Println((*caster), "| deleting key: ", key )*/
 				delete((*caster).Status, key)
-				//fmt.Println((*caster))
 			},
 		},
 		{
